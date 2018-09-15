@@ -26,6 +26,7 @@ PROGRAM LinearTetMechanicsExample
   INTEGER(CMISSIntg), PARAMETER :: BasisUserNumber=1
   INTEGER(CMISSIntg), PARAMETER :: MeshUserNumber=1
   INTEGER(CMISSIntg), PARAMETER :: DecompositionUserNumber=1
+  INTEGER(CMISSIntg), PARAMETER :: DecomposerUserNumber=1
 
   INTEGER(CMISSIntg), PARAMETER :: NumberOfXiCoordinates=3
   INTEGER(CMISSIntg), PARAMETER :: TotalNumberOfNodes=4
@@ -62,8 +63,8 @@ PROGRAM LinearTetMechanicsExample
 
   INTEGER(CMISSIntg) :: NumberGlobalXElements,NumberGlobalYElements,NumberGlobalZElements
   INTEGER(CMISSIntg) :: MPI_IERROR
-  INTEGER(CMISSIntg) :: EquationsSetIndex  
-  INTEGER(CMISSIntg) :: NumberOfComputationalNodes,NumberOfDomains,ComputationalNodeNumber
+  INTEGER(CMISSIntg) :: decompositionIndex,EquationsSetIndex  
+  INTEGER(CMISSIntg) :: NumberOfComputationalNodes,ComputationalNodeNumber
 
   !CMISS variables
 
@@ -74,6 +75,7 @@ PROGRAM LinearTetMechanicsExample
   TYPE(cmfe_CoordinateSystemType) :: CoordinateSystem
   TYPE(cmfe_MeshType) :: Mesh
   TYPE(cmfe_DecompositionType) :: Decomposition
+  TYPE(cmfe_DecomposerType) :: Decomposer
   TYPE(cmfe_EquationsType) :: Equations
   TYPE(cmfe_EquationsSetType) :: EquationsSet
   TYPE(cmfe_FieldType) :: GeometricField,FibreField,MaterialField,DependentField,EquationsSetField
@@ -84,6 +86,7 @@ PROGRAM LinearTetMechanicsExample
   TYPE(cmfe_SolverEquationsType) :: SolverEquations
   TYPE(cmfe_NodesType) :: Nodes
   TYPE(cmfe_MeshElementsType) :: Elements
+  TYPE(cmfe_WorkGroupType) :: worldWorkGroup
 
   !REAL(CMISSRP), POINTER :: FieldData(:)
 
@@ -122,19 +125,20 @@ PROGRAM LinearTetMechanicsExample
   !Get the number of computational nodes and this computational node number
   CALL cmfe_ComputationEnvironment_Initialise(computationEnvironment,err)
   CALL cmfe_Context_ComputationEnvironmentGet(context,computationEnvironment,err)
-  CALL cmfe_ComputationEnvironment_NumberOfWorldNodesGet(computationEnvironment,numberOfComputationalNodes,err)
-  CALL cmfe_ComputationEnvironment_WorldNodeNumberGet(computationEnvironment,computationalNodeNumber,err)
+  
+  CALL cmfe_WorkGroup_Initialise(worldWorkGroup,err)
+  CALL cmfe_ComputationEnvironment_WorldWorkGroupGet(computationEnvironment,worldWorkGroup,err)
+  CALL cmfe_WorkGroup_NumberOfGroupNodesGet(worldWorkGroup,numberOfComputationNodes,err)
+  CALL cmfe_WorkGroup_GroupNodeNumberGet(worldWorkGroup,computationNodeNumber,err)
 
   NumberGlobalXElements=1
   NumberGlobalYElements=1
   NumberGlobalZElements=1   
-  NumberOfDomains=1
 
   !Broadcast the number of elements in the X,Y and Z directions and the number of partitions to the other computational nodes
   CALL MPI_BCAST(NumberGlobalXElements,1,MPI_INTEGER,0,MPI_COMM_WORLD,MPI_IERROR)
   CALL MPI_BCAST(NumberGlobalYElements,1,MPI_INTEGER,0,MPI_COMM_WORLD,MPI_IERROR)
   CALL MPI_BCAST(NumberGlobalZElements,1,MPI_INTEGER,0,MPI_COMM_WORLD,MPI_IERROR)
-  CALL MPI_BCAST(NumberOfDomains,1,MPI_INTEGER,0,MPI_COMM_WORLD,MPI_IERROR)
 
   !Create a CS - default is 3D rectangular cartesian CS with 0,0,0 as origin
   CALL cmfe_CoordinateSystem_Initialise(CoordinateSystem,Err)
@@ -182,10 +186,16 @@ PROGRAM LinearTetMechanicsExample
   !Create a decomposition
   CALL cmfe_Decomposition_Initialise(Decomposition,Err)
   CALL cmfe_Decomposition_CreateStart(DecompositionUserNumber,Mesh,Decomposition,Err)
-  CALL cmfe_Decomposition_TypeSet(Decomposition,CMFE_DECOMPOSITION_CALCULATED_TYPE,Err)
-  CALL cmfe_Decomposition_NumberOfDomainsSet(Decomposition,NumberOfDomains,Err)
   CALL cmfe_Decomposition_CreateFinish(Decomposition,Err)
 
+  !Decompose
+  CALL cmfe_Decomposer_Initialise(decomposer,err)
+  CALL cmfe_Decomposer_CreateStart(decomposerUserNumber,region,worldWorkGroup,decomposer,err)
+  !Add in the decomposition
+  CALL cmfe_Decomposer_DecompositionAdd(decomposer,decomposition,decompositionIndex,err)
+  !Finish the decomposer
+  CALL cmfe_Decomposer_CreateFinish(decomposer,err)
+  
   !Create a field to put the geometry (default is geometry)
   CALL cmfe_Field_Initialise(GeometricField,Err)
   CALL cmfe_Field_CreateStart(FieldGeometryUserNumber,Region,GeometricField,Err)
