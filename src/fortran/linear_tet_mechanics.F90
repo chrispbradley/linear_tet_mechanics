@@ -281,6 +281,7 @@ PROGRAM LinearTetMechanicsExample
   CALL cmfe_EquationsSet_EquationsCreateStart(equationsSet,equations,err)
   CALL cmfe_Equations_SparsityTypeSet(equations,CMFE_EQUATIONS_SPARSE_MATRICES,err)
   CALL cmfe_Equations_OutputTypeSet(equations,CMFE_EQUATIONS_NO_OUTPUT,err)
+  !CALL cmfe_Equations_OutputTypeSet(equations,CMFE_EQUATIONS_MATRIX_OUTPUT,err)
   CALL cmfe_EquationsSet_EquationsCreateFinish(equationsSet,err)   
 
   !Initialise dependent field from undeformed geometry and displacement bcs and set hydrostatic pressure
@@ -308,7 +309,8 @@ PROGRAM LinearTetMechanicsExample
   CALL cmfe_Solver_Initialise(linearSolver,err)
   CALL cmfe_Problem_SolversCreateStart(problem,err)
   CALL cmfe_Problem_SolverGet(problem,CMFE_CONTROL_LOOP_NODE,1,solver,err)
-  CALL cmfe_Solver_OutputTypeSet(solver,CMFE_SOLVER_PROGRESS_OUTPUT,err)
+  !CALL cmfe_Solver_OutputTypeSet(solver,CMFE_SOLVER_PROGRESS_OUTPUT,err)
+  CALL cmfe_Solver_OutputTypeSet(solver,CMFE_SOLVER_MATRIX_OUTPUT,err)
   CALL cmfe_Solver_NewtonJacobianCalculationTypeSet(solver,CMFE_SOLVER_NEWTON_JACOBIAN_FD_CALCULATED,err)
   CALL cmfe_Solver_NewtonLinearSolverGet(solver,linearSolver,err)
   CALL cmfe_Solver_LinearTypeSet(linearSolver,CMFE_SOLVER_LINEAR_DIRECT_SOLVE_TYPE,err)
