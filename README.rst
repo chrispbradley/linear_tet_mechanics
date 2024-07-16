@@ -11,7 +11,7 @@ Instructions on how to configure and build with CMake::
 
   git clone https://github.com/OpenCMISS-Examples/linear_tet_mechanics.git
   mkdir build
-  cmake -DOpenCMISSLibs_DIR=/path/to/opencmisslib/install ../linear_tet_mechanics
+  cmake -DOpenCMISS_INSTALL_ROOT=/path/to/opencmiss/install ../linear_tet_mechanics
   make  # cmake --build . will also work here and is much more platform agnostic.
 
 Running the example
